@@ -1,0 +1,46 @@
+/* --- COMPORTAMIENTO POR DEFECTO (CELULARES) --- */
+.contenedor-principal {
+  display: flex;
+  flex-direction: column;
+  /* Apila el menú y el contenido de arriba hacia abajo */
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 100%;
+  position: relative;
+  /* Deja de estar fijo */
+  height: auto;
+  padding: 15px;
+  background-color: #1a1a2e;
+  color: white;
+}
+
+.contenido-dinamico {
+  margin-left: 0;
+  /* Sin margen a la izquierda en celulares */
+  padding: 15px;
+  width: 100%;
+}
+
+/* --- COMPORTAMIENTO PARA COMPUTADORAS Y TABLETS GRANDES --- */
+@media (min-width: 768px) {
+  .contenedor-principal {
+    flex-direction: row;
+    /* Coloca las cosas una al lado de la otra */
+  }
+
+  .sidebar {
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    /* Se queda pegado a la izquierda */
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  }
+
+  .contenido-dinamico {
+    margin-left: 250px;
+    /* Hace espacio para el menú fijo */
+    padding: 30px;
+  }
+}
