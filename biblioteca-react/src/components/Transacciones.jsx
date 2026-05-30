@@ -36,17 +36,17 @@ function Transacciones() {
     }, []);
 
     const cargarDatos = () => {
-        fetch('http://localhost:8080/api/transacciones')
+        fetch('https://biblioteca-backend-gt3f.onrender.com/api/transacciones')
             .then(res => res.json())
             .then(data => setTransacciones(data))
             .catch(err => console.error("Error transacciones:", err));
 
-        fetch('http://localhost:8080/api/libros')
+        fetch('https://biblioteca-backend-gt3f.onrender.com/api/libros')
             .then(res => res.json())
             .then(data => setLibros(data))
             .catch(err => console.error("Error libros:", err));
 
-        fetch('http://localhost:8080/api/usuarios')
+        fetch('https://biblioteca-backend-gt3f.onrender.com/api/usuarios')
             .then(res => res.json())
             .then(data => setUsuarios(data))
             .catch(err => console.error("Error usuarios:", err));
@@ -64,8 +64,8 @@ function Transacciones() {
         };
 
         const url = editandoId
-            ? `http://localhost:8080/api/transacciones/${editandoId}`
-            : 'http://localhost:8080/api/transacciones';
+            ? `https://biblioteca-backend-gt3f.onrender.com/api/transacciones/${editandoId}`
+            : 'https://biblioteca-backend-gt3f.onrender.com/api/transacciones';
 
         const metodo = editandoId ? 'PUT' : 'POST';
 
@@ -119,7 +119,7 @@ function Transacciones() {
 
     const eliminarTransaccion = (id) => {
         if (window.confirm("¿Estás seguro de que deseas eliminar este registro?")) {
-            fetch(`http://localhost:8080/api/transacciones/${id}`, { method: 'DELETE' })
+            fetch(`https://biblioteca-backend-gt3f.onrender.com/api/transacciones/${id}`, { method: 'DELETE' })
                 .then(() => cargarDatos())
                 .catch(error => console.error("Error al eliminar:", error));
         }
@@ -257,7 +257,7 @@ function Transacciones() {
                                 <td>{t.fechaDevolucionEsperada}</td>
                                 <td>
                                     <span className={`badge ${t.estado === 'ACTIVO' ? 'bg-warning text-dark' :
-                                            t.estado === 'DEVUELTO' ? 'bg-success' : 'bg-danger'
+                                        t.estado === 'DEVUELTO' ? 'bg-success' : 'bg-danger'
                                         }`}>
                                         {t.estado}
                                     </span>

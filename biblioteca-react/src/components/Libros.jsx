@@ -19,7 +19,7 @@ function Libros() {
     }, []);
 
     const cargarLibros = () => {
-        fetch('http://localhost:8080/api/libros')
+        fetch("https://biblioteca-backend-gt3f.onrender.com/api/libros")
             .then(response => response.json())
             .then(data => setLibros(data))
             .catch(error => console.error("Error al cargar:", error));
@@ -29,8 +29,8 @@ function Libros() {
         e.preventDefault();
 
         const url = editandoId
-            ? `http://localhost:8080/api/libros/${editandoId}`
-            : 'http://localhost:8080/api/libros';
+            ? `https://biblioteca-backend-gt3f.onrender.com/api/libros/${editandoId}`
+            : 'https://biblioteca-backend-gt3f.onrender.com/api/libros';
 
         const metodo = editandoId ? 'PUT' : 'POST';
 
@@ -67,7 +67,7 @@ function Libros() {
 
     const eliminarLibro = (id) => {
         if (window.confirm("¿Estás seguro de que deseas eliminar este libro?")) {
-            fetch(`http://localhost:8080/api/libros/${id}`, {
+            fetch(`https://biblioteca-backend-gt3f.onrender.com/api/libros/${id}`, {
                 method: 'DELETE'
             })
                 .then(() => cargarLibros())

@@ -13,7 +13,7 @@ function Usuarios() {
     useEffect(() => { cargarUsuarios(); }, []);
 
     const cargarUsuarios = () => {
-        fetch('http://localhost:8080/api/usuarios')
+        fetch('https://biblioteca-backend-gt3f.onrender.com/api/usuarios')
             .then(response => response.json())
             .then(data => setUsuarios(data))
             .catch(error => console.error("Error al cargar:", error));
@@ -21,7 +21,7 @@ function Usuarios() {
 
     const manejarEnvio = (e) => {
         e.preventDefault();
-        const url = editandoId ? `http://localhost:8080/api/usuarios/${editandoId}` : 'http://localhost:8080/api/usuarios';
+        const url = editandoId ? `https://biblioteca-backend-gt3f.onrender.com/api/usuarios/${editandoId}` : 'https://biblioteca-backend-gt3f.onrender.com/api/usuarios';
         const metodo = editandoId ? 'PUT' : 'POST';
 
         fetch(url, {
@@ -47,7 +47,7 @@ function Usuarios() {
 
     const eliminarUsuario = (id) => {
         if (window.confirm("¿Estás seguro de que deseas eliminar este lector?")) {
-            fetch(`http://localhost:8080/api/usuarios/${id}`, { method: 'DELETE' })
+            fetch(`https://biblioteca-backend-gt3f.onrender.com/api/usuarios/${id}`, { method: 'DELETE' })
                 .then(() => cargarUsuarios())
                 .catch(error => console.error("Error al eliminar:", error));
         }
