@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FaUniversity, FaBook, FaUsers, FaHandshake } from 'react-icons/fa';
+import { FaUniversity, FaBook, FaUsers, FaHandshake, FaHome } from 'react-icons/fa';
 
 function Sidebar() {
     // 1. Obtenemos la ruta actual (ej: "/libros" o "/usuarios")
@@ -31,6 +31,12 @@ function Sidebar() {
 
             <ul style={{ listStyleType: 'none', padding: 0 }}>
                 {/* Reducimos el margin a 5px porque ahora los links tienen su propio padding */}
+                <li style={{ margin: '5px 0' }}>
+                    <Link to="/" style={obtenerEstiloLink('/')}>
+                        <FaHome style={{ marginRight: '12px' }} />
+                        Inicio
+                    </Link>
+                </li>
                 <li style={{ margin: '5px 0' }}>
                     <Link to="/libros" style={obtenerEstiloLink('/libros')}>
                         <FaBook style={{ marginRight: '12px' }} />

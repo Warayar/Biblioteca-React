@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import Libros from './components/Libros';
 import Usuarios from './components/Usuarios';
 import Transacciones from './components/Transacciones';
+import Dashboard from './components/Dashboard';
 import './App.css'; // ¡Súper importante importar el CSS aquí!
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
 
         <div className="contenido-dinamico">
           <Routes>
+            <Route path="/" element={<Dashboard />} />
             <Route path="/" element={<Navigate to="/libros" />} />
             <Route path="/libros" element={<Libros />} />
             <Route path="/usuarios" element={<Usuarios />} />
