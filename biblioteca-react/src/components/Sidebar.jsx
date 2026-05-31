@@ -24,10 +24,13 @@ function Sidebar() {
 
     return (
         <div className="sidebar">
-            <h2 style={{ borderBottom: '1px solid #383854', paddingBottom: '15px', marginBottom: '20px', display: 'flex', alignItems: 'center', fontSize: '22px' }}>
-                <FaUniversity style={{ marginRight: '10px' }} />
-                U San Marcos
-            </h2>
+            {/* 👇 ENVOLVEMOS EL H2 EN UN LINK 👇 */}
+            <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <h2 style={{ borderBottom: '1px solid #383854', paddingBottom: '15px', marginBottom: '20px', display: 'flex', alignItems: 'center', fontSize: '22px' }}>
+                    <FaUniversity style={{ marginRight: '10px' }} />
+                    U San Marcos
+                </h2>
+            </Link>
 
             <ul style={{ listStyleType: 'none', padding: 0 }}>
                 {/* Reducimos el margin a 5px porque ahora los links tienen su propio padding */}

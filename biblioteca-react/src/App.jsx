@@ -19,6 +19,7 @@ function App() {
             <Route path="/libros" element={<Libros />} />
             <Route path="/usuarios" element={<Usuarios />} />
             <Route path="/transacciones" element={<Transacciones />} />
+            <Route path="*" element={<Navigate to="/" />} />
             <Route path="/transacciones" element={<h2>Construyendo el módulo de préstamos... 🚧</h2>} />
           </Routes>
         </div>
