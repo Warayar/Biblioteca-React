@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaBook, FaPlus, FaSave, FaTimes, FaEdit, FaTrash } from 'react-icons/fa';
+import Swal from 'sweetalert2';
 
 function Libros() {
     const [libros, setLibros] = useState([]);
@@ -27,11 +28,8 @@ function Libros() {
 
     const manejarEnvio = (e) => {
         e.preventDefault();
-
-        const url = editandoId
-            ? `https://biblioteca-backend-gt3f.onrender.com/api/libros/${editandoId}`
+        const url = editandoId ? `https://biblioteca-backend-gt3f.onrender.com/api/libros/${editandoId}`
             : 'https://biblioteca-backend-gt3f.onrender.com/api/libros';
-
         const metodo = editandoId ? 'PUT' : 'POST';
 
         fetch(url, {
@@ -42,6 +40,14 @@ function Libros() {
             .then(() => {
                 cargarLibros();
                 cancelarEdicion();
+                // 👇 MAGIA DE SWEETALERT AQUÍ 👇
+                Swal.fire({
+                    title: '¡Excelente!',
+                    text: editandoId ? 'El libro se actualizó con éxito' : 'El libro se registró con éxito',
+                    icon: 'success',
+                    timer: 2000, // Se cierra solo en 2 segundos
+                    showConfirmButton: false
+                });
             })
             .catch(error => console.error("Error al guardar:", error));
     };
@@ -51,7 +57,7 @@ function Libros() {
         setNuevoLibro({
             titulo: libro.titulo,
             autor: libro.autor,
-            anio: libro.anioPublicacion || '', // Por si algún libro viejo no tiene año
+            anioPublicacion: libro.anioPublicacion || '', // Por si algún libro viejo no tiene año
             disponible: libro.disponible
         });
         setEditandoId(libro.id);
@@ -66,13 +72,28 @@ function Libros() {
     };
 
     const eliminarLibro = (id) => {
-        if (window.confirm("¿Estás seguro de que deseas eliminar este libro?")) {
-            fetch(`https://biblioteca-backend-gt3f.onrender.com/api/libros/${id}`, {
-                method: 'DELETE'
-            })
-                .then(() => cargarLibros())
-                .catch(error => console.error("Error al eliminar:", error));
-        }
+        // 👇 CONFIRMACIÓN MODERNA 👇
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Esta acción no se puede deshacer",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`https://biblioteca-backend-gt3f.onrender.com/api/libros/${id}`, {
+                    method: 'DELETE'
+                })
+                    .then(() => {
+                        cargarLibros();
+                        Swal.fire('¡Eliminado!', 'El libro ha sido borrado.', 'success');
+                    })
+                    .catch(error => console.error("Error al eliminar:", error));
+            }
+        });
     };
 
     return (

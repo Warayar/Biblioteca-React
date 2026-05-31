@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaUsers, FaPlus, FaSave, FaTimes, FaEdit, FaTrash } from 'react-icons/fa';
+import Swal from 'sweetalert2';
 
 function Usuarios() {
     const [usuarios, setUsuarios] = useState([]);
@@ -19,8 +20,40 @@ function Usuarios() {
             .catch(error => console.error("Error al cargar:", error));
     };
 
-    const manejarEnvio = (e) => {
+    // 1. Agregamos la palabra "async" aquí
+    const manejarEnvio = async (e) => {
         e.preventDefault();
+
+        // 👇 --- INICIO DE VALIDACIÓN DE NEGOCIO --- 👇
+        // Si estamos editando un usuario y lo estamos intentando inactivar (estado === false)
+        if (editandoId && nuevoUsuario.estado === false) {
+            try {
+                // Le pedimos a Render la lista de transacciones rápidamente
+                const respuesta = await fetch('https://biblioteca-backend-gt3f.onrender.com/api/transacciones');
+                const transacciones = await respuesta.json();
+
+                // Buscamos si existe al menos una (some) donde el usuario sea este y el estado sea ACTIVO
+                const tienePendientes = transacciones.some(t =>
+                    t.usuario?.idUsuario === editandoId && t.estado === 'ACTIVO'
+                );
+
+                if (tienePendientes) {
+                    // Si te debe un libro, lanzamos la alerta y abortamos el guardado
+                    Swal.fire({
+                        title: 'Acción Bloqueada',
+                        text: 'No puedes inactivar a un lector que tiene libros pendientes de devolver.',
+                        icon: 'warning',
+                        confirmButtonColor: '#f39c12'
+                    });
+                    return; // 🛑 Esta palabra mágica detiene la función aquí mismo y no guarda nada
+                }
+            } catch (error) {
+                console.error("Error al validar transacciones:", error);
+            }
+        }
+        // 👆 --- FIN DE VALIDACIÓN --- 👆
+
+        // Si pasó la validación (o si era un usuario nuevo), continúa el guardado normal
         const url = editandoId ? `https://biblioteca-backend-gt3f.onrender.com/api/usuarios/${editandoId}` : 'https://biblioteca-backend-gt3f.onrender.com/api/usuarios';
         const metodo = editandoId ? 'PUT' : 'POST';
 
@@ -29,8 +62,31 @@ function Usuarios() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(nuevoUsuario)
         })
-            .then(() => { cargarUsuarios(); cancelarEdicion(); })
-            .catch(error => console.error("Error al guardar:", error));
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("No se pudo guardar el registro. Verifica que la cédula no esté repetida en el sistema.");
+                }
+            })
+            .then(() => {
+                cargarUsuarios();
+                cancelarEdicion();
+                Swal.fire({
+                    title: '¡Excelente!',
+                    text: editandoId ? 'El lector se actualizó con éxito' : 'El lector se registró con éxito',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            })
+            .catch(error => {
+                console.error("Error al guardar:", error);
+                Swal.fire({
+                    title: 'Acción Denegada',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#0d6efd'
+                });
+            });
     };
 
     const iniciarEdicion = (u) => {
@@ -46,11 +102,26 @@ function Usuarios() {
     };
 
     const eliminarUsuario = (id) => {
-        if (window.confirm("¿Estás seguro de que deseas eliminar este lector?")) {
-            fetch(`https://biblioteca-backend-gt3f.onrender.com/api/usuarios/${id}`, { method: 'DELETE' })
-                .then(() => cargarUsuarios())
-                .catch(error => console.error("Error al eliminar:", error));
-        }
+        // 👇 CONFIRMACIÓN MODERNA 👇
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Esta acción no se puede deshacer",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`https://biblioteca-backend-gt3f.onrender.com/api/usuarios/${id}`, { method: 'DELETE' })
+                    .then(() => {
+                        cargarUsuarios();
+                        Swal.fire('¡Eliminado!', 'El lector ha sido borrado exitosamente.', 'success');
+                    })
+                    .catch(error => console.error("Error al eliminar:", error));
+            }
+        });
     };
 
     return (

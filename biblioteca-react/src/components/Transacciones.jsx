@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaHandshake, FaPlus, FaSave, FaTimes, FaEdit, FaTrash } from 'react-icons/fa';
+import Swal from 'sweetalert2';
 
 function Transacciones() {
     const [transacciones, setTransacciones] = useState([]);
@@ -75,21 +76,56 @@ function Transacciones() {
             body: JSON.stringify(payload)
         })
             .then(async response => {
-                // VALIDACIÓN DE SEGURIDAD: Atrapamos el error 500 de Java
                 if (!response.ok) {
                     throw new Error("El libro seleccionado no está disponible en este momento.");
                 }
                 return response.json();
             })
             .then(() => {
+                // 👇 --- 1. AUTOMATIZACIÓN DE INVENTARIO (LIBROS) --- 👇
+                const libroAActualizar = libros.find(l => l.id.toString() === nuevoPrestamo.idLibro.toString());
+
+                if (libroAActualizar) {
+                    const debeEstarDisponible = (nuevoPrestamo.estado === 'DEVUELTO');
+                    if (libroAActualizar.disponible !== debeEstarDisponible) {
+                        const libroModificado = { ...libroAActualizar, disponible: debeEstarDisponible };
+                        fetch(`https://biblioteca-backend-gt3f.onrender.com/api/libros/${libroModificado.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(libroModificado)
+                        }).catch(err => console.error("Error al sincronizar inventario:", err));
+                    }
+                }
+                // 👆 ------------------------------------------------ 👆
+
+                // 👇 --- 2. AUTOMATIZACIÓN DE ESTADO (LECTORES) --- 👇
+                // Buscamos al usuario en la memoria de React usando el ID que seleccionamos en el select
+                const usuarioAActualizar = usuarios.find(u => u.idUsuario.toString() === nuevoPrestamo.idUsuario.toString());
+
+                // Si encontramos al usuario, verificamos si está inactivo (false) y si el nuevo préstamo está 'ACTIVO'
+                if (usuarioAActualizar && usuarioAActualizar.estado === false && nuevoPrestamo.estado === 'ACTIVO') {
+                    // Le cambiamos el estado a true (Activo)
+                    const usuarioModificado = { ...usuarioAActualizar, estado: true };
+
+                    // Hacemos la petición silenciosa para actualizarlo en la base de datos
+                    fetch(`https://biblioteca-backend-gt3f.onrender.com/api/usuarios/${usuarioModificado.idUsuario}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(usuarioModificado)
+                    }).catch(err => console.error("Error al reactivar lector:", err));
+                }
+                // 👆 ---------------------------------------------- 👆
+
                 cargarDatos();
                 cancelarEdicion();
+                Swal.fire({
+                    title: '¡Excelente!',
+                    text: editandoId ? 'El préstamo se actualizó con éxito' : 'El préstamo se registró con éxito',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             })
-            .catch(error => {
-                console.error("Error al guardar préstamo:", error);
-                // POP-UP DE ALERTA PARA EL USUARIO
-                window.alert("❌ ACCIÓN DENEGADA: \n\n" + error.message);
-            });
     };
 
     const iniciarEdicion = (t) => {
@@ -118,11 +154,26 @@ function Transacciones() {
     };
 
     const eliminarTransaccion = (id) => {
-        if (window.confirm("¿Estás seguro de que deseas eliminar este registro?")) {
-            fetch(`https://biblioteca-backend-gt3f.onrender.com/api/transacciones/${id}`, { method: 'DELETE' })
-                .then(() => cargarDatos())
-                .catch(error => console.error("Error al eliminar:", error));
-        }
+        // 👇 CONFIRMACIÓN MODERNA 👇
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Se eliminará este registro de préstamo permanentemente",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`https://biblioteca-backend-gt3f.onrender.com/api/transacciones/${id}`, { method: 'DELETE' })
+                    .then(() => {
+                        cargarDatos();
+                        Swal.fire('¡Eliminado!', 'El registro ha sido borrado.', 'success');
+                    })
+                    .catch(error => console.error("Error al eliminar:", error));
+            }
+        });
     };
 
     return (
