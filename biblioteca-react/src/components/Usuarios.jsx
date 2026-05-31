@@ -6,6 +6,7 @@ function Usuarios() {
     const [usuarios, setUsuarios] = useState([]);
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
     const [editandoId, setEditandoId] = useState(null);
+    const [busqueda, setBusqueda] = useState(''); // 👇 1. NUEVO ESTADO PARA EL BUSCADOR
 
     const [nuevoUsuario, setNuevoUsuario] = useState({
         nombre: '', apellido1: '', apellido2: '', cedula: '', correo: '', telefono: '', estado: true
@@ -20,40 +21,32 @@ function Usuarios() {
             .catch(error => console.error("Error al cargar:", error));
     };
 
-    // 1. Agregamos la palabra "async" aquí
     const manejarEnvio = async (e) => {
         e.preventDefault();
 
-        // 👇 --- INICIO DE VALIDACIÓN DE NEGOCIO --- 👇
-        // Si estamos editando un usuario y lo estamos intentando inactivar (estado === false)
         if (editandoId && nuevoUsuario.estado === false) {
             try {
-                // Le pedimos a Render la lista de transacciones rápidamente
                 const respuesta = await fetch('https://biblioteca-backend-gt3f.onrender.com/api/transacciones');
                 const transacciones = await respuesta.json();
 
-                // Buscamos si existe al menos una (some) donde el usuario sea este y el estado sea ACTIVO
                 const tienePendientes = transacciones.some(t =>
                     t.usuario?.idUsuario === editandoId && t.estado === 'ACTIVO'
                 );
 
                 if (tienePendientes) {
-                    // Si te debe un libro, lanzamos la alerta y abortamos el guardado
                     Swal.fire({
                         title: 'Acción Bloqueada',
                         text: 'No puedes inactivar a un lector que tiene libros pendientes de devolver.',
                         icon: 'warning',
                         confirmButtonColor: '#f39c12'
                     });
-                    return; // 🛑 Esta palabra mágica detiene la función aquí mismo y no guarda nada
+                    return;
                 }
             } catch (error) {
                 console.error("Error al validar transacciones:", error);
             }
         }
-        // 👆 --- FIN DE VALIDACIÓN --- 👆
 
-        // Si pasó la validación (o si era un usuario nuevo), continúa el guardado normal
         const url = editandoId ? `https://biblioteca-backend-gt3f.onrender.com/api/usuarios/${editandoId}` : 'https://biblioteca-backend-gt3f.onrender.com/api/usuarios';
         const metodo = editandoId ? 'PUT' : 'POST';
 
@@ -102,7 +95,6 @@ function Usuarios() {
     };
 
     const eliminarUsuario = (id) => {
-        // 👇 CONFIRMACIÓN MODERNA 👇
         Swal.fire({
             title: '¿Estás seguro?',
             text: "Esta acción no se puede deshacer",
@@ -123,6 +115,19 @@ function Usuarios() {
             }
         });
     };
+
+    // 👇 2. LÓGICA DEL BUSCADOR EN TIEMPO REAL 👇
+    const usuariosFiltrados = usuarios.filter(u => {
+        const termino = busqueda.toLowerCase();
+        const nombreCompleto = `${u.nombre || ''} ${u.apellido1 || ''} ${u.apellido2 || ''}`.toLowerCase();
+        const cedula = (u.cedula || '').toLowerCase();
+        const correo = (u.correo || '').toLowerCase();
+
+        return nombreCompleto.includes(termino) ||
+            cedula.includes(termino) ||
+            correo.includes(termino);
+    });
+    // 👆 -------------------------------------- 👆
 
     return (
         <div>
@@ -153,33 +158,71 @@ function Usuarios() {
                                         <option value="true">Activo</option><option value="false">Inactivo</option>
                                     </select>
                                 </div>
-                                <div className="col-md-2 mb-3 d-flex align-items-end"><button type="submit" className={`btn w-100 ${editandoId ? 'btn-warning' : 'btn-success'}`}><FaSave /> {editandoId ? 'Actualizar' : 'Guardar'}</button></div>
+                                <div className="col-md-2 mb-3 d-flex align-items-end"><button type="submit" className={`btn w-100 fw-bold shadow-sm ${editandoId ? 'btn-warning' : 'btn-success'}`}><FaSave /> {editandoId ? 'Actualizar' : 'Guardar'}</button></div>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
 
+            {/* 👇 3. BARRA DE BÚSQUEDA VISUAL 👇 */}
+            <div className="row mb-3 mt-2">
+                <div className="col-md-6">
+                    <input
+                        type="text"
+                        className="form-control border-primary shadow-sm"
+                        placeholder="🔍 Buscar por nombre, cédula o correo..."
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                    />
+                </div>
+            </div>
+            {/* 👆 ------------------------------ 👆 */}
+
+            {/* TABLA DE RESULTADOS USUARIOS */}
             <div className="table-responsive">
-                <table className="table table-hover table-striped shadow-sm">
+                <table className="table table-hover table-striped shadow-sm border align-middle">
                     <thead className="table-dark">
                         <tr>
-                            <th>Cédula</th><th>Nombre Completo</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th className="text-center">Acciones</th>
+                            <th className="text-nowrap d-none d-md-table-cell">Cédula</th>
+                            <th className="text-nowrap">Nombre Completo</th>
+                            <th className="text-nowrap d-none d-md-table-cell">Correo</th>
+                            <th className="text-nowrap">Estado</th>
+                            <th className="text-center text-nowrap">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {usuarios.map(u => (
+                        {/* 👇 4. USAMOS LA LISTA FILTRADA 👇 */}
+                        {usuariosFiltrados.map(u => (
                             <tr key={u.idUsuario}>
-                                <td>{u.cedula}</td><td><strong>{u.nombre} {u.apellido1} {u.apellido2}</strong></td><td>{u.correo}</td><td>{u.telefono}</td>
-                                <td><span className={`badge ${u.estado ? 'bg-success' : 'bg-danger'}`}>{u.estado ? '✅ Activo' : '❌ Inactivo'}</span></td>
-                                <td className="text-center">
-                                    <button onClick={() => iniciarEdicion(u)} className="btn btn-sm btn-outline-primary me-2"><FaEdit /></button>
-                                    <button onClick={() => eliminarUsuario(u.idUsuario)} className="btn btn-sm btn-outline-danger"><FaTrash /></button>
+                                <td className="d-none d-md-table-cell">{u.cedula}</td>
+                                <td className="text-nowrap"><strong>{u.nombre} {u.apellido1} {u.apellido2}</strong></td>
+                                <td className="text-nowrap d-none d-md-table-cell">{u.correo}</td>
+                                <td>
+                                    <span className={`badge ${u.estado ? 'bg-success' : 'bg-danger'}`}>
+                                        {u.estado ? '✅ Activo' : '❌ Inactivo'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div className="d-flex justify-content-center flex-nowrap gap-2">
+                                        <button onClick={() => iniciarEdicion(u)} className="btn btn-sm btn-outline-primary" title="Editar">
+                                            <FaEdit />
+                                        </button>
+                                        <button onClick={() => eliminarUsuario(u.idUsuario)} className="btn btn-sm btn-outline-danger" title="Eliminar">
+                                            <FaTrash />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
+                {/* Mensaje si no hay resultados */}
+                {usuariosFiltrados.length === 0 && (
+                    <div className="text-center p-4 text-muted">
+                        No se encontraron lectores que coincidan con tu búsqueda.
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -8,6 +8,7 @@ function Transacciones() {
     const [usuarios, setUsuarios] = useState([]);
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
     const [editandoId, setEditandoId] = useState(null);
+    const [busqueda, setBusqueda] = useState(''); // <-- ESTADO DEL BUSCADOR
 
     // 1. FUNCIÓN PARA FECHAS AUTOMÁTICAS
     const obtenerFechasPorDefecto = () => {
@@ -99,15 +100,11 @@ function Transacciones() {
                 // 👆 ------------------------------------------------ 👆
 
                 // 👇 --- 2. AUTOMATIZACIÓN DE ESTADO (LECTORES) --- 👇
-                // Buscamos al usuario en la memoria de React usando el ID que seleccionamos en el select
                 const usuarioAActualizar = usuarios.find(u => u.idUsuario.toString() === nuevoPrestamo.idUsuario.toString());
 
-                // Si encontramos al usuario, verificamos si está inactivo (false) y si el nuevo préstamo está 'ACTIVO'
                 if (usuarioAActualizar && usuarioAActualizar.estado === false && nuevoPrestamo.estado === 'ACTIVO') {
-                    // Le cambiamos el estado a true (Activo)
                     const usuarioModificado = { ...usuarioAActualizar, estado: true };
 
-                    // Hacemos la petición silenciosa para actualizarlo en la base de datos
                     fetch(`https://biblioteca-backend-gt3f.onrender.com/api/usuarios/${usuarioModificado.idUsuario}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
@@ -126,6 +123,15 @@ function Transacciones() {
                     showConfirmButton: false
                 });
             })
+            .catch(error => {
+                console.error("Error al guardar préstamo:", error);
+                Swal.fire({
+                    title: 'Acción Denegada',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#0d6efd'
+                });
+            });
     };
 
     const iniciarEdicion = (t) => {
@@ -154,7 +160,6 @@ function Transacciones() {
     };
 
     const eliminarTransaccion = (id) => {
-        // 👇 CONFIRMACIÓN MODERNA 👇
         Swal.fire({
             title: '¿Estás seguro?',
             text: "Se eliminará este registro de préstamo permanentemente",
@@ -175,6 +180,19 @@ function Transacciones() {
             }
         });
     };
+
+    // 👇 LÓGICA DEL BUSCADOR EN TIEMPO REAL 👇
+    const transaccionesFiltradas = transacciones.filter(t => {
+        const termino = busqueda.toLowerCase();
+        const nombreLector = `${t.usuario?.nombre || ''} ${t.usuario?.apellido1 || ''}`.toLowerCase();
+        const tituloLibro = (t.libro?.titulo || '').toLowerCase();
+        const estadoPrestamo = (t.estado || '').toLowerCase();
+
+        return nombreLector.includes(termino) ||
+            tituloLibro.includes(termino) ||
+            estadoPrestamo.includes(termino);
+    });
+    // 👆 -------------------------------------- 👆
 
     return (
         <div>
@@ -197,7 +215,6 @@ function Transacciones() {
                             {editandoId ? '✏️ Editar Préstamo' : 'Registrar Nuevo Préstamo'}
                         </h5>
                         <form onSubmit={manejarEnvio}>
-                            {/* FILA 1: Selectores con mucho espacio (col-md-6) para evitar descuadres */}
                             <div className="row mb-3">
                                 <div className="col-md-6">
                                     <label className="form-label text-muted fw-bold">Lector</label>
@@ -207,7 +224,6 @@ function Transacciones() {
                                         value={nuevoPrestamo.idUsuario}
                                         onChange={e => setNuevoPrestamo({ ...nuevoPrestamo, idUsuario: e.target.value })}
                                     >
-                                        {/* Opción por defecto asegurada */}
                                         <option value="" disabled>-- Seleccione un lector --</option>
                                         {usuarios.map(u => (
                                             <option key={u.idUsuario} value={u.idUsuario}>
@@ -224,7 +240,6 @@ function Transacciones() {
                                         value={nuevoPrestamo.idLibro}
                                         onChange={e => setNuevoPrestamo({ ...nuevoPrestamo, idLibro: e.target.value })}
                                     >
-                                        {/* Opción por defecto asegurada */}
                                         <option value="" disabled>-- Seleccione un libro --</option>
                                         {libros.map(l => (
                                             <option
@@ -239,7 +254,6 @@ function Transacciones() {
                                 </div>
                             </div>
 
-                            {/* FILA 2: Fechas, Estado y Botón de Guardar bien distribuidos */}
                             <div className="row">
                                 <div className="col-md-3 mb-3">
                                     <label className="form-label">Fecha de Préstamo</label>
@@ -284,28 +298,43 @@ function Transacciones() {
                 </div>
             )}
 
+            {/* 👇 BARRA DE BÚSQUEDA VISUAL 👇 */}
+            <div className="row mb-3 mt-2">
+                <div className="col-md-6">
+                    <input
+                        type="text"
+                        className="form-control border-primary shadow-sm"
+                        placeholder="🔍 Buscar por lector, libro o estado..."
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                    />
+                </div>
+            </div>
+            {/* 👆 ------------------------------ 👆 */}
+
             {/* TABLA DE RESULTADOS */}
             <div className="table-responsive">
-                <table className="table table-hover table-striped shadow-sm border">
+                <table className="table table-hover table-striped shadow-sm border align-middle">
                     <thead className="table-dark">
                         <tr>
-                            <th>ID</th>
-                            <th>Lector</th>
-                            <th>Libro</th>
-                            <th>F. Préstamo</th>
-                            <th>Vencimiento</th>
-                            <th>Estado</th>
-                            <th className="text-center">Acciones</th>
+                            <th className="text-nowrap d-none d-md-table-cell">ID</th>
+                            <th className="text-nowrap">Lector</th>
+                            <th className="text-nowrap">Libro</th>
+                            <th className="text-nowrap d-none d-md-table-cell">F. Préstamo</th>
+                            <th className="text-nowrap">Vencimiento</th>
+                            <th className="text-nowrap">Estado</th>
+                            <th className="text-center text-nowrap">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {transacciones.map(t => (
+                        {/* 👇 AQUI CAMBIAMOS PARA QUE USE LA LISTA FILTRADA 👇 */}
+                        {transaccionesFiltradas.map(t => (
                             <tr key={t.id}>
-                                <td>{t.id}</td>
-                                <td><strong>{t.usuario?.nombre} {t.usuario?.apellido1}</strong></td>
-                                <td>{t.libro?.titulo}</td>
-                                <td>{t.fechaPrestamo}</td>
-                                <td>{t.fechaDevolucionEsperada}</td>
+                                <td className="d-none d-md-table-cell">{t.id}</td>
+                                <td className="text-nowrap"><strong>{t.usuario?.nombre} {t.usuario?.apellido1}</strong></td>
+                                <td className="text-nowrap">{t.libro?.titulo}</td>
+                                <td className="text-nowrap d-none d-md-table-cell">{t.fechaPrestamo}</td>
+                                <td className="text-nowrap">{t.fechaDevolucionEsperada}</td>
                                 <td>
                                     <span className={`badge ${t.estado === 'ACTIVO' ? 'bg-warning text-dark' :
                                         t.estado === 'DEVUELTO' ? 'bg-success' : 'bg-danger'
@@ -313,18 +342,26 @@ function Transacciones() {
                                         {t.estado}
                                     </span>
                                 </td>
-                                <td className="text-center">
-                                    <button onClick={() => iniciarEdicion(t)} className="btn btn-sm btn-outline-primary me-2" title="Editar">
-                                        <FaEdit />
-                                    </button>
-                                    <button onClick={() => eliminarTransaccion(t.id)} className="btn btn-sm btn-outline-danger" title="Eliminar">
-                                        <FaTrash />
-                                    </button>
+                                <td>
+                                    <div className="d-flex justify-content-center flex-nowrap gap-2">
+                                        <button onClick={() => iniciarEdicion(t)} className="btn btn-sm btn-outline-primary" title="Editar">
+                                            <FaEdit />
+                                        </button>
+                                        <button onClick={() => eliminarTransaccion(t.id)} className="btn btn-sm btn-outline-danger" title="Eliminar">
+                                            <FaTrash />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
+                {/* Un pequeño mensaje si la búsqueda no encuentra nada */}
+                {transaccionesFiltradas.length === 0 && (
+                    <div className="text-center p-4 text-muted">
+                        No se encontraron registros que coincidan con tu búsqueda.
+                    </div>
+                )}
             </div>
         </div>
     );

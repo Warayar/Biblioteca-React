@@ -6,6 +6,7 @@ function Libros() {
     const [libros, setLibros] = useState([]);
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
     const [editandoId, setEditandoId] = useState(null);
+    const [busqueda, setBusqueda] = useState(''); // 👇 1. NUEVO ESTADO PARA EL BUSCADOR
 
     // 1. Agregamos "anio" al estado inicial
     const [nuevoLibro, setNuevoLibro] = useState({
@@ -96,6 +97,19 @@ function Libros() {
         });
     };
 
+    // 👇 2. LÓGICA DEL BUSCADOR EN TIEMPO REAL 👇
+    const librosFiltrados = libros.filter(libro => {
+        const termino = busqueda.toLowerCase();
+        const titulo = (libro.titulo || '').toLowerCase();
+        const autor = (libro.autor || '').toLowerCase();
+        const anio = (libro.anioPublicacion || '').toString().toLowerCase();
+
+        return titulo.includes(termino) ||
+            autor.includes(termino) ||
+            anio.includes(termino);
+    });
+    // 👆 -------------------------------------- 👆
+
     return (
         <div>
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -163,7 +177,7 @@ function Libros() {
                                     </select>
                                 </div>
                                 <div className="col-md-2 mb-3 d-flex align-items-end">
-                                    <button type="submit" className={`btn w-100 ${editandoId ? 'btn-warning' : 'btn-success'}`}>
+                                    <button type="submit" className={`btn w-100 fw-bold shadow-sm ${editandoId ? 'btn-warning' : 'btn-success'}`}>
                                         <FaSave style={{ marginRight: '5px' }} /> {editandoId ? 'Actualizar' : 'Guardar'}
                                     </button>
                                 </div>
@@ -173,42 +187,68 @@ function Libros() {
                 </div>
             )}
 
+            {/* 👇 3. BARRA DE BÚSQUEDA VISUAL 👇 */}
+            <div className="row mb-3 mt-2">
+                <div className="col-md-6">
+                    <input
+                        type="text"
+                        className="form-control border-primary shadow-sm"
+                        placeholder="🔍 Buscar por título, autor o año..."
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                    />
+                </div>
+            </div>
+            {/* 👆 ------------------------------ 👆 */}
+
+            {/* TABLA DE RESULTADOS LIBROS */}
             <div className="table-responsive">
-                <table className="table table-hover table-striped shadow-sm">
+                <table className="table table-hover table-striped shadow-sm border align-middle">
                     <thead className="table-dark">
                         <tr>
-                            <th>ID</th>
-                            <th>Título</th>
-                            <th>Autor</th>
-                            <th>Año</th>
-                            <th>Estado</th>
-                            <th className="text-center">Acciones</th>
+                            {/* Ocultamos ID y Año en celular */}
+                            <th className="text-nowrap d-none d-md-table-cell">ID</th>
+                            <th className="text-nowrap">Título</th>
+                            <th className="text-nowrap">Autor</th>
+                            <th className="text-nowrap d-none d-md-table-cell">Año</th>
+                            <th className="text-nowrap">Estado</th>
+                            <th className="text-center text-nowrap">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {libros.map(libro => (
+                        {/* 👇 4. USAMOS LA LISTA FILTRADA 👇 */}
+                        {librosFiltrados.map(libro => (
                             <tr key={libro.id}>
-                                <td>{libro.id}</td>
-                                <td><strong>{libro.titulo}</strong></td>
-                                <td>{libro.autor}</td>
-                                <td>{libro.anioPublicacion}</td> {/* <-- Aquí */}
+                                <td className="d-none d-md-table-cell">{libro.id}</td>
+                                <td className="text-nowrap"><strong>{libro.titulo}</strong></td>
+                                <td className="text-nowrap">{libro.autor}</td>
+                                <td className="text-nowrap d-none d-md-table-cell">{libro.anioPublicacion}</td>
                                 <td>
                                     <span className={`badge ${libro.disponible ? 'bg-success' : 'bg-danger'}`}>
                                         {libro.disponible ? '✅ Disponible' : '❌ Prestado'}
                                     </span>
                                 </td>
-                                <td className="text-center">
-                                    <button onClick={() => iniciarEdicion(libro)} className="btn btn-sm btn-outline-primary me-2" title="Editar">
-                                        <FaEdit />
-                                    </button>
-                                    <button onClick={() => eliminarLibro(libro.id)} className="btn btn-sm btn-outline-danger" title="Eliminar">
-                                        <FaTrash />
-                                    </button>
+                                <td>
+                                    {/* Botones alineados y protegidos con Flexbox */}
+                                    <div className="d-flex justify-content-center flex-nowrap gap-2">
+                                        <button onClick={() => iniciarEdicion(libro)} className="btn btn-sm btn-outline-primary" title="Editar">
+                                            <FaEdit />
+                                        </button>
+                                        <button onClick={() => eliminarLibro(libro.id)} className="btn btn-sm btn-outline-danger" title="Eliminar">
+                                            <FaTrash />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
+                {/* Mensaje si no hay resultados */}
+                {librosFiltrados.length === 0 && (
+                    <div className="text-center p-4 text-muted">
+                        No se encontraron libros que coincidan con tu búsqueda.
+                    </div>
+                )}
             </div>
         </div>
     );
